@@ -1,0 +1,17 @@
+# Proxy local de la app en http://localhost:8088. Hace lo que en AWS hace CloudFront con sus dos orígenes:
+#  - /geo-bcn/v2/*  -> ALB de Floci (floci:80), añadiendo la X-Api-Key de OriginCustomHeaders de la distribución
+#  - el resto       -> distribución CloudFront de Floci (floci:4566 con Host = dominio de la distribución) -> S3
+# Existe porque Floci no deja a CloudFront usar el ALB como origen (IP privada). GEO_API_KEY y CF_DOMAIN los
+# pone local/app-up.sh desde la configuración de la distribución y las salidas de las pilas; no hay claves aquí.
+:8088 {
+	handle /geo-bcn/v2/* {
+		reverse_proxy floci:80 {
+			header_up X-Api-Key {$GEO_API_KEY}
+		}
+	}
+	handle {
+		reverse_proxy floci:4566 {
+			header_up Host {$CF_DOMAIN}
+		}
+	}
+}

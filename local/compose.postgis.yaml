@@ -1,0 +1,10 @@
+# Variante: RDS de Floci con imagen PostGIS (geo-postgis:17, de local/postgis/Dockerfile: docker build -t geo-postgis:17 local/postgis).
+# postgis/postgis no tiene imagen arm64: Floci falla con 'no matching manifest for linux/arm64/v8'. Uso: docker compose -f local/compose.yaml -f local/compose.postgis.yaml up -d
+services:
+  floci:
+    environment:
+      FLOCI_SERVICES_RDS_DEFAULT_POSTGRES_IMAGE: geo-postgis:17
+      # CloudFront -> ALB: Floci bloquea orígenes con IP privada salvo que el host esté en
+      # FLOCI_SERVICES_CLOUDFRONT_ALLOWED_PRIVATE_ORIGIN_HOSTS. Solo acepta nombres exactos:
+      # "*.elb.localhost.floci.io" no casa y ".elb.localhost.floci.io" impide arrancar ("Empty label is not a legal name").
+      # El DNS del ALB es aleatorio en cada despliegue, así que no se puede fijar de antemano.

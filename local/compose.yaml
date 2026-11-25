@@ -1,0 +1,27 @@
+# Floci propio de infra-geo-bcn, independiente del de lrz-digital-bank (otro contenedor, puerto, red y namespace).
+# Uso: docker compose -f local/compose.yaml up -d   |   docker rm -f geo-floci
+name: geo-floci
+
+networks:
+  geo-floci-net:
+    name: geo-floci-net
+
+services:
+  floci:
+    image: floci/floci:2.5.0
+    container_name: geo-floci
+    user: root
+    ports:
+      - "4577:4566"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      FLOCI_SERVICES_DOCKER_NETWORK: geo-floci-net
+      FLOCI_DOCKER_RESOURCE_NAMESPACE: geofloci
+      FLOCI_DEFAULT_REGION: eu-west-1
+      # ECR con URI tipo ruta (localhost:<puerto>/<cuenta>/<región>/<repo>): Docker Desktop no resuelve el host por
+      # defecto (000000000000.dkr.ecr.eu-west-1.localhost) y ECS no podría descargar la imagen del back.
+      FLOCI_SERVICES_ECR_URI_STYLE: path
+    networks:
+      geo-floci-net:
+        aliases: [floci]
