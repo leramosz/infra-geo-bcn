@@ -1,0 +1,20 @@
+# Entorno local
+.venv/
+.idea/
+.vscode/
+.DS_Store
+
+# Floci y pruebas locales (el estado vive en contenedores; por si se activa persistencia o se generan ficheros)
+local/data/
+local/.floci/
+*.log
+tmp/
+.env
+.env.*
+*.pem
+*.key
+*.crt
+
+# Builds de terceros si se copian aquí
+dist/
+node_modules/

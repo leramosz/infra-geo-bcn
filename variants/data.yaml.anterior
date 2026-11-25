@@ -1,0 +1,50 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: BCN Geo - RDS PostgreSQL (PostGIS se activa con CREATE EXTENSION en la migracion V1)
+
+Parameters:
+  NetworkStackName: {Type: String, Default: geobcn-network}
+  DbInstanceClass: {Type: String, Default: db.t4g.micro}
+  EngineVersion:
+    Type: String
+    Default: "17.7"
+    Description: "Verificar antes de desplegar: aws rds describe-db-engine-versions --engine postgres --query DBEngineVersions[].EngineVersion"
+  DbName: {Type: String, Default: geobcn}
+  DbUsername: {Type: String, Default: geobcn}
+  MultiAz:
+    Type: String
+    AllowedValues: ["true", "false"]
+    Default: "false"
+
+Resources:
+  DbSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subredes privadas de BCN Geo
+      SubnetIds: !Split [",", {"Fn::ImportValue": !Sub "${NetworkStackName}-PrivateSubnets"}]
+
+  Database:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Snapshot
+    UpdateReplacePolicy: Snapshot
+    Properties:
+      Engine: postgres
+      EngineVersion: !Ref EngineVersion
+      DBInstanceClass: !Ref DbInstanceClass
+      AllocatedStorage: "20"
+      StorageType: gp3
+      StorageEncrypted: true
+      DBName: !Ref DbName
+      MasterUsername: !Ref DbUsername
+      ManageMasterUserPassword: true   # RDS crea y rota la clave en Secrets Manager; no hay contrasena en el repo
+      MultiAZ: !Ref MultiAz
+      PubliclyAccessible: false
+      DBSubnetGroupName: !Ref DbSubnetGroup
+      VPCSecurityGroups: [{"Fn::ImportValue": !Sub "${NetworkStackName}-DbSg"}]
+      BackupRetentionPeriod: 7
+      DeletionProtection: false
+
+Outputs:
+  DbEndpoint: {Value: !GetAtt Database.Endpoint.Address, Export: {Name: !Sub "${AWS::StackName}-DbEndpoint"}}
+  DbPort: {Value: !GetAtt Database.Endpoint.Port, Export: {Name: !Sub "${AWS::StackName}-DbPort"}}
+  DbName: {Value: !Ref DbName, Export: {Name: !Sub "${AWS::StackName}-DbName"}}
+  DbSecretArn: {Value: !GetAtt Database.MasterUserSecret.SecretArn, Export: {Name: !Sub "${AWS::StackName}-DbSecretArn"}}
